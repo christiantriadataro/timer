@@ -1,0 +1,1 @@
+export const TIMERPROVIDER_ERROR_MESSAGE = "Timer Provider must be within the Component"
