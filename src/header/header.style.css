@@ -1,0 +1,20 @@
+@layer components {
+    .List-item {
+        @apply py-2 px-4 cursor-pointer hover:brightness-150 bg-[#29292E] rounded-t-lg
+    }
+
+    .open-tool-tip {
+        @apply top-20 right-32 bg-[#29292E] text-[#E1E1E6] rounded-lg w-60 text-xl
+    }
+
+    .button-icon {
+        @apply p-4 flex cursor-pointer hover:brightness-150;
+    }
+
+    .button-container {
+        @apply flex flex-row gap-5 justify-between;
+    }
+    .header-container {
+        @apply relative h-[48px] pt-10 px-10 flex flex-row justify-between items-center;
+    }
+}

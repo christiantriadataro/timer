@@ -1,0 +1,2 @@
+export const TODO_TIME_SECONDS=1500
+export const BREAK_TIME_SECONDS=300
