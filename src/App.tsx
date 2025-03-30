@@ -5,7 +5,7 @@ import Header from "./header/Header.tsx";
 
 function Num({value}: { value: number }) {
     return (
-        <div className="flex justify-center xl:w-[350px] rounded-xl items-center text-[#E1E1E6]">{value}</div>
+        <div className="flex justify-center w-[180px] xl:w-[350px] rounded-xl items-center text-[#E1E1E6]">{value}</div>
     )
 }
 
