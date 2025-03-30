@@ -12,7 +12,7 @@
     }
 
     .timer-container {
-        @apply flex flex-row items-center gap-10 lg:gap-30 xl:gap-20 xl:text-[760px] text-[400px]
+        @apply flex flex-row items-center gap-10 lg:gap-30 xl:gap-20 xl:text-[760px] md:text-[400px] text-[300px]
     }
 
     .black-line {
