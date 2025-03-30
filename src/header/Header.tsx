@@ -6,7 +6,7 @@ import PlayLogo from "../assets/icons/play.svg";
 import PauseLogo from "../assets/icons/pause.svg";
 import TimerIcon from "../assets/icons/timer.svg";
 import HistoryIcon from "../assets/icons/history.svg";
-import {TODO_TIME_SECONDS} from "./header.constants.ts";
+import {BREAK_TIME_SECONDS, TODO_TIME_SECONDS} from "./header.constants.ts";
 
 interface IButtonItem {
     handler: () => void,
@@ -74,8 +74,8 @@ function Header() {
     }
 
     const handleBreakTime = () => {
-        // setTime(BREAK_TIME_SECONDS)
-        setTime(3)
+        setTime(BREAK_TIME_SECONDS)
+        // setTime(3)
         handleTodoMenu()
         setTimer(TIMER_TYPE_ENUM.PAUSE)
     }
