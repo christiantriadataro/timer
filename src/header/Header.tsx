@@ -43,14 +43,14 @@ function ButtonGroup({item}: { item: IButtonItem[] }) {
 function Logo({handlePlay}: { handlePlay: () => void }) {
     const {timer} = useTimer()
     return (
-        <img onClick={handlePlay} src={timer === "PAUSE" ? PlayLogo : PauseLogo} className="h-[48px]" alt=""/>
+        <img onClick={handlePlay} src={timer === "PAUSE" ? PlayLogo : PauseLogo} className="h-[30px] lg:h-[48px]" alt=""/>
     )
 }
 
 function ButtonIcon({icon, handler}: { icon: string, handler?: () => void }) {
     return (
         <div className="button-icon" onClick={handler}>
-            <img src={icon} alt="" className="h-[26px]"/>
+            <img src={icon} alt="" className="h-[26px] lg:h-[35px] lg:w-[35px]"/>
         </div>
     )
 }
@@ -86,6 +86,13 @@ function Header() {
         setTimer(TIMER_TYPE_ENUM.PAUSE)
     }
 
+    const handleBreakTime5 = () => {
+        const BREAK_TIME_FIVE_SECODNS = 5 * 60
+         setTime(BREAK_TIME_FIVE_SECODNS)
+        handleTodoMenu()
+        setTimer(TIMER_TYPE_ENUM.PAUSE)
+    }
+
     const handleHistory = () => {
         // TODO: provides line chart for the user
     }
@@ -106,6 +113,10 @@ function Header() {
         {
             handler: handleBreakTime,
             label: "Break Time: 10 Minutes"
+        },
+         {
+            handler: handleBreakTime5,
+            label: "Break Time: 5 Minutes"
         },
     ]
 
