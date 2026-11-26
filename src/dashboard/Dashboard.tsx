@@ -7,6 +7,8 @@ import {PatternStats, StudyTimes, TagBreakdown} from "./Patterns.tsx";
 import Heatmap from "./Heatmap.tsx";
 import {type Bucket, DayGrid, MonthGrid, WeekGrid} from "./Cells.tsx";
 import CellSessions from "./CellSessions.tsx";
+import Compare from "./Compare.tsx";
+import SessionLog from "./SessionLog.tsx";
 import {periodLabel} from "./format.ts";
 
 const hours = (minutes: number) => (minutes / 60).toFixed(minutes < 600 ? 1 : 0);
@@ -131,6 +133,12 @@ function Dashboard() {
                         </div>
                     </dl>
 
+                    <section aria-labelledby="compare-heading" className="dashboard-section">
+                        <h2 id="compare-heading" className="dashboard-subtitle">Compared with the {scale} before</h2>
+                        <Compare now={o} before={data.previous.outcomes} inProgress={hasToday}
+                                 previousLabel={periodLabel(scale, data.previous.from, data.previous.to, today)}/>
+                    </section>
+
                     <section aria-labelledby="period-heading" className="dashboard-section">
                         <h2 id="period-heading" className="dashboard-subtitle">
                             {Math.round(o.focusMinutes)} focus minutes {inLabel}
@@ -193,6 +201,11 @@ function Dashboard() {
                             </dl>
                         </section>
                     </div>
+
+                    <section aria-labelledby="log-heading" className="dashboard-section">
+                        <h2 id="log-heading" className="dashboard-subtitle">Session log {inLabel}</h2>
+                        <SessionLog sessions={data.log}/>
+                    </section>
                 </>
             )}
         </main>
