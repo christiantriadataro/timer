@@ -105,4 +105,41 @@
     .stat-label { @apply text-sm text-[#A8A8B3]; }
     .stat-value { @apply text-3xl mt-2 leading-none tabular-nums; }
     .stat-hint { @apply text-xs text-[#7C7C8A] mt-2; }
+
+    /* TIMER-0008 functional baseline; visual pass pending. */
+    .tag-filter { @apply flex items-center gap-2 text-sm; }
+    .tag-filter-label { @apply text-[#A8A8B3]; }
+    .tag-filter-select { @apply rounded-md bg-[#202024] px-3 py-1.5 text-[#E1E1E6]; }
+
+    .pattern-callout { @apply mb-4 text-sm text-[#A8A8B3]; }
+    .pattern-callout strong { @apply text-[#E1E1E6]; }
+    .hw-pair { @apply grid gap-6 lg:grid-cols-2; }
+    .hw-scroll { @apply overflow-x-auto; }
+    .hw-table { @apply w-full min-w-[420px] border-separate border-spacing-[2px]; }
+    .hw-caption { @apply mb-2 text-left text-xs text-[#A8A8B3]; }
+    .hw-hour { @apply h-4 text-left text-[10px] font-normal text-[#7C7C8A]; }
+    .hw-weekday { @apply pr-2 text-left text-[10px] font-normal text-[#7C7C8A]; }
+    .hw-cell { @apply h-3 rounded-[2px] p-0; }
+    .eff-none { @apply bg-[#1A1A1E]; }
+    .eff-0 { @apply bg-[#5A2A2E]; }
+    .eff-1 { @apply bg-[#7A4A2E]; }
+    .eff-2 { @apply bg-[#6B6B2E]; }
+    .eff-3 { @apply bg-[#2F8F55]; }
+    .eff-4 { @apply bg-[#7EE6A1]; }
+    .hw-legend { @apply mt-3 flex flex-wrap items-center gap-3 text-xs text-[#7C7C8A]; }
+    .hw-legend-item { @apply inline-flex items-center gap-1; }
+    .hw-swatch { @apply inline-block h-3 w-3 rounded-[2px]; }
+
+    .dashboard-columns--even > :last-child { @apply lg:col-span-1; }
+    .dashboard-columns--even { @apply lg:grid-cols-2; }
+    .stat-grid--four { @apply sm:grid-cols-2; }
+    .tag-list { @apply flex flex-col gap-2; }
+    .tag-button { @apply grid w-full grid-cols-[minmax(0,8rem)_1fr_auto_auto] items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-[#202024]; }
+    .tag-button[aria-pressed="true"] { @apply bg-[#29292E]; }
+    .tag-name { @apply truncate; }
+    .tag-name--untagged { @apply italic text-[#A8A8B3]; }
+    .tag-bar { @apply block h-2 rounded bg-[#202024]; }
+    .tag-bar-fill { @apply block h-2 rounded bg-[#2FBF63]; }
+    .tag-minutes { @apply tabular-nums; }
+    .tag-sessions { @apply text-xs text-[#7C7C8A]; }
 }

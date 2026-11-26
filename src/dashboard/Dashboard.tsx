@@ -2,7 +2,8 @@ import {useEffect, useState, useSyncExternalStore} from "react";
 import {Link} from "react-router";
 import {sessionTracker} from "../db/sessionTracker.ts";
 import {localFields} from "../db/sessions.ts";
-import {type DashboardData, periodRange, type Scale, shiftAnchor} from "../db/stats.ts";
+import {type DashboardData, periodRange, type Scale, shiftAnchor, type TagFilter} from "../db/stats.ts";
+import {PatternStats, StudyTimes, TagBreakdown} from "./Patterns.tsx";
 import Heatmap from "./Heatmap.tsx";
 import {type Bucket, DayGrid, MonthGrid, WeekGrid} from "./Cells.tsx";
 import CellSessions from "./CellSessions.tsx";
@@ -14,6 +15,11 @@ const SCALES: { scale: Scale; label: string }[] = [
     {scale: "day", label: "Day"}, {scale: "week", label: "Week"}, {scale: "month", label: "Month"}, {scale: "year", label: "Year"},
 ];
 const BAND_LABELS = ["0 min", "1–24 min", "25–49 min", "50–99 min", "100+ min"];
+// <select> values: a sentinel for "all" and for untagged (null); anything else is the tag itself.
+const ALL = "\u0000all";
+const UNTAGGED = "\u0000untagged";
+const tagToValue = (t: TagFilter) => (t === undefined ? ALL : t === null ? UNTAGGED : t);
+const valueToTag = (v: string): TagFilter => (v === ALL ? undefined : v === UNTAGGED ? null : v);
 
 function Stat({label, value, hint}: { label: string; value: string | number; hint?: string }) {
     return (
@@ -32,17 +38,23 @@ function Dashboard() {
     const [selected, setSelected] = useState<Bucket | null>(null);
     const [data, setData] = useState<DashboardData | null>(null);
     const [loaded, setLoaded] = useState(false);
+    const [tag, setTag] = useState<TagFilter>(undefined);
     const storageError = useSyncExternalStore(sessionTracker.subscribe, sessionTracker.getError);
 
     useEffect(() => {
         let live = true;
-        sessionTracker.dashboard(scale, anchor).then((d) => {
+        sessionTracker.dashboard(scale, anchor, tag).then((d) => {
             if (!live) return;
             setData(d ?? null);
             setLoaded(true);
         });
         return () => { live = false; };
-    }, [scale, anchor]);
+    }, [scale, anchor, tag]);
+
+    const pickTag = (next: TagFilter) => {
+        setTag(next);
+        setSelected(null);
+    };
 
     const range = periodRange(scale, anchor);
     const hasToday = range.from <= today && today <= range.to;
@@ -82,6 +94,14 @@ function Dashboard() {
                             onClick={() => go(scale, shiftAnchor(scale, anchor, 1))}>›</button>
                     <button type="button" className="period-today" disabled={hasToday} onClick={() => go(scale, today)}>Today</button>
                 </div>
+                <label className="tag-filter">
+                    <span className="tag-filter-label">Tag</span>
+                    <select className="tag-filter-select" value={tagToValue(tag)} onChange={(e) => pickTag(valueToTag(e.target.value))}>
+                        <option value={ALL}>All tags</option>
+                        {(data?.allTags ?? []).map((t) => <option key={tagToValue(t)} value={tagToValue(t)}>{t ?? "untagged"}</option>)}
+                        {tag !== undefined && !(data?.allTags ?? []).includes(tag) && <option value={tagToValue(tag)}>{tag ?? "untagged"}</option>}
+                    </select>
+                </label>
             </nav>
 
             {!loaded && <p className="dashboard-status" role="status">Loading your sessions…</p>}
@@ -128,12 +148,28 @@ function Dashboard() {
                             </figcaption>
                         </figure>
                         {selected
-                            ? <CellSessions bucket={selected} onClose={() => setSelected(null)}/>
+                            ? <CellSessions bucket={selected} tag={tag} onClose={() => setSelected(null)}/>
                             : <p className="dashboard-hint">Select a {scale === "day" ? "time slot" : "day"} to see its sessions.</p>}
                         {o.started === 0 && (
                             <p className="dashboard-empty">No focus sessions in this period. Start a 25-minute lock-in from the timer and it will show up here.</p>
                         )}
                     </section>
+
+                    <section aria-labelledby="times-heading" className="dashboard-section">
+                        <h2 id="times-heading" className="dashboard-subtitle">When you study {inLabel}</h2>
+                        <StudyTimes patterns={data.patterns}/>
+                    </section>
+
+                    <div className="dashboard-columns dashboard-columns--even">
+                        <section aria-labelledby="patterns-heading" className="dashboard-section">
+                            <h2 id="patterns-heading" className="dashboard-subtitle">Patterns</h2>
+                            <PatternStats patterns={data.patterns}/>
+                        </section>
+                        <section aria-labelledby="tags-heading" className="dashboard-section">
+                            <h2 id="tags-heading" className="dashboard-subtitle">Tags</h2>
+                            <TagBreakdown tags={data.tags} active={tag} onPick={pickTag}/>
+                        </section>
+                    </div>
 
                     <div className="dashboard-columns">
                         <section aria-labelledby="streak-heading" className="dashboard-section">

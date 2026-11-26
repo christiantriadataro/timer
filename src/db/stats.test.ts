@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import init from "@sqlite.org/sqlite-wasm";
 import {type Db, endSession, migrate, pauseSession, resumeSession, startSession} from "./sessions.ts";
 import {
-    addDays, band, dashboard, hourlyFocus, isoWeekday, monthGrid, outcomes, periodRange, sessionsIn, shiftAnchor,
-    streaks, weekDates, yearGrid,
+    addDays, band, dailyFocus, dashboard, hourlyFocus, isoWeekday, monthGrid, outcomes, patterns, periodRange, sessionsIn,
+    shiftAnchor, streaks, tagTotals, weekDates, yearGrid,
 } from "./stats.ts";
 
 const sqlite3 = await init();
@@ -162,4 +162,91 @@ test("dashboard tiles follow the chosen period; streaks stay all-time", () => {
     const day = dashboard(db, "2026-11-26", "day", "2026-11-24");
     assert.equal(day.hours?.[9], 25);
     assert.equal(day.outcomes.finished, 1);
+});
+
+const tagged = (date: string, minutes: number, tag: string | null, status: "finished" | "stopped" = "finished", hour = 9, pauses = 0) => {
+    const t0 = at(date, hour);
+    const id = startSession(db, {kind: "focus", plannedSeconds: 1500, tag, now: t0});
+    for (let p = 0; p < pauses; p++) { pauseSession(db, id, t0 + MIN * (p + 1) - 1); resumeSession(db, id, t0 + MIN * (p + 1)); }
+    endSession(db, id, status, t0 + minutes * MIN + pauses);
+    return id;
+};
+
+test("patterns: usual minutes per weekday × hour, peak hour, best weekday", () => {
+    tagged("2026-11-23", 25, null, "finished", 9);  // Mon 09
+    tagged("2026-11-24", 25, null, "finished", 9);  // Tue 09
+    tagged("2026-11-24", 20, null, "stopped", 14);  // Tue 14
+    const p = patterns(db, "2026-11-01", "2026-11-30");
+    assert.equal(p.usual[0][9], 25);
+    assert.equal(p.usual[1][9], 25);
+    assert.equal(p.usual[1][14], 20);
+    assert.equal(p.peakHour, 9);
+    assert.equal(p.bestWeekday, 2);
+    assert.equal(p.avgSessionMinutes, (25 + 25 + 20) / 3);
+});
+
+test("effectiveness needs 3 closed sessions per slot; ties go to fewer pauses", () => {
+    // Mon 09: 3 sessions, 2 finished → 67%. Tue 10: 2 sessions → not enough data.
+    for (const d of ["2026-11-02", "2026-11-09"]) tagged(d, 25, null, "finished", 9);
+    tagged("2026-11-16", 10, null, "stopped", 9);
+    for (const d of ["2026-11-03", "2026-11-10"]) tagged(d, 25, null, "finished", 10);
+    // Wed 08 and Thu 08: both 100% over 3 sessions, Thu with pauses.
+    for (const d of ["2026-11-04", "2026-11-11", "2026-11-18"]) tagged(d, 25, null, "finished", 8);
+    for (const d of ["2026-11-05", "2026-11-12", "2026-11-19"]) tagged(d, 25, null, "finished", 8, 2);
+    const p = patterns(db, "2026-11-01", "2026-11-30");
+    assert.equal(Math.round((p.effective[0][9] ?? 0) * 100), 67);
+    assert.equal(p.effective[1][10], null);
+    assert.equal(p.samples[1][10], 2);
+    assert.equal(p.mostEffective?.weekday, 3);
+    assert.equal(p.mostEffective?.hour, 8);
+    assert.equal(p.mostEffective?.rate, 1);
+});
+
+test("open sessions don't count toward effectiveness; empty periods give nulls", () => {
+    for (const d of ["2026-11-02", "2026-11-09"]) tagged(d, 25, null, "finished", 9);
+    startSession(db, {kind: "focus", plannedSeconds: 1500, now: at("2026-11-16", 9)}); // still running
+    const p = patterns(db, "2026-11-01", "2026-11-30");
+    assert.equal(p.effective[0][9], null);
+    const empty = patterns(db, "2026-01-01", "2026-01-31");
+    assert.deepEqual([empty.mostEffective, empty.peakHour, empty.bestWeekday, empty.avgSessionMinutes, empty.breakRatio], [null, null, null, null, null]);
+});
+
+test("break ratio is break minutes over focus minutes", () => {
+    tagged("2026-11-24", 20, null);
+    const b = startSession(db, {kind: "break", plannedSeconds: 600, now: at("2026-11-24", 10)});
+    endSession(db, b, "finished", at("2026-11-24", 10) + 5 * MIN);
+    assert.equal(patterns(db, "2026-11-01", "2026-11-30").breakRatio, 0.25);
+});
+
+test("tag filter applies to every query, including untagged and streaks", () => {
+    tagged("2026-11-24", 25, "DSA");
+    tagged("2026-11-25", 20, "AWS");
+    tagged("2026-11-25", 10, null, "stopped", 11);
+    tagged("2026-11-26", 15, "DSA");
+
+    assert.deepEqual(dailyFocus(db, "2026-11-01", "2026-11-30", "DSA").map((d) => d.date), ["2026-11-24", "2026-11-26"]);
+    assert.equal(outcomes(db, "2026-11-01", "2026-11-30", "DSA").started, 2);
+    assert.equal(outcomes(db, "2026-11-01", "2026-11-30", null).stopped, 1);
+    assert.equal(outcomes(db, "2026-11-01", "2026-11-30").started, 4);
+    assert.equal(hourlyFocus(db, "2026-11-25", "AWS")[9], 20);
+    assert.equal(hourlyFocus(db, "2026-11-25", "AWS")[11], 0);
+    assert.equal(sessionsIn(db, "2026-11-25", "2026-11-25", null, null).length, 1);
+
+    const dsa = dashboard(db, "2026-11-26", "year", "2026-11-26", "DSA");
+    assert.deepEqual(dsa.streaks, {current: 1, longest: 1}); // DSA on 24 and 26, not 25
+    assert.deepEqual(dashboard(db, "2026-11-26").streaks, {current: 3, longest: 3});
+    assert.deepEqual(dsa.tags, [{tag: "DSA", sessions: 2, minutes: 40}]);
+    assert.deepEqual(dsa.allTags, ["DSA", "AWS", null]);
+});
+
+test("tag totals rank tags by minutes, with untagged as null", () => {
+    tagged("2026-11-24", 25, "DSA");
+    tagged("2026-11-25", 25, "DSA");
+    tagged("2026-11-25", 20, "AWS");
+    tagged("2026-11-26", 5, null, "stopped");
+    assert.deepEqual(tagTotals(db, "2026-11-01", "2026-11-30"), [
+        {tag: "DSA", sessions: 2, minutes: 50},
+        {tag: "AWS", sessions: 1, minutes: 20},
+        {tag: null, sessions: 1, minutes: 5},
+    ]);
 });
