@@ -61,6 +61,9 @@ CREATE INDEX sessions_status ON sessions(status);
 PRAGMA user_version = 1;
 `;
 
+// Highest PRAGMA user_version this build understands; backups from a newer schema are refused.
+export const SCHEMA_VERSION = 1;
+
 export function migrate(db: Db) {
     const version = Number(db.selectValue("PRAGMA user_version"));
     if (version < 1) db.exec(`BEGIN; ${SCHEMA_V1} COMMIT;`);
