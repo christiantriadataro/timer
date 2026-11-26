@@ -54,6 +54,7 @@ function Dashboard() {
 
     const o = data?.outcomes;
     const label = periodLabel(scale, range.from, range.to, today);
+    const inLabel = `${scale === "day" ? "on" : "in"} ${label}`;
     const minutes = new Map((data?.days ?? []).map((d) => [d.date, d.minutes]));
     const grid = data && {anchor: data.anchor, today, minutes, selected, onSelect: setSelected};
 
@@ -112,9 +113,9 @@ function Dashboard() {
 
                     <section aria-labelledby="period-heading" className="dashboard-section">
                         <h2 id="period-heading" className="dashboard-subtitle">
-                            {Math.round(o.focusMinutes)} focus minutes in {label}
+                            {Math.round(o.focusMinutes)} focus minutes {inLabel}
                         </h2>
-                        <figure className={`heatmap heatmap--${scale}`} aria-label={`Focus heatmap: ${Math.round(o.focusMinutes)} minutes in ${label}`}>
+                        <figure className={`heatmap heatmap--${scale}`} aria-label={`Focus heatmap: ${Math.round(o.focusMinutes)} minutes ${inLabel}`}>
                             {scale === "year" && <Heatmap end={data.anchor} {...grid}/>}
                             {scale === "month" && <MonthGrid {...grid}/>}
                             {scale === "week" && <WeekGrid {...grid}/>}
@@ -144,7 +145,7 @@ function Dashboard() {
                         </section>
 
                         <section aria-labelledby="outcome-heading" className="dashboard-section">
-                            <h2 id="outcome-heading" className="dashboard-subtitle">Sessions in {label}</h2>
+                            <h2 id="outcome-heading" className="dashboard-subtitle">Sessions {inLabel}</h2>
                             <dl className="stat-grid">
                                 <Stat label="Focus hours" value={hours(o.focusMinutes)}/>
                                 <Stat label="Started" value={o.started}/>
