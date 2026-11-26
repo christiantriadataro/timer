@@ -20,8 +20,9 @@ const EffectProvider = ({children}: IProvider) => {
             if (!s) return
             setKind(s.kind)
             setTag(s.tag ?? "")
-            remainingMsRef.current = s.remaining_ms
-            setTime(Math.ceil(s.remaining_ms / 1000))
+            const left = s.ends_at === null ? s.remaining_ms : Math.max(0, s.ends_at - Date.now())
+            remainingMsRef.current = left
+            setTime(Math.ceil(left / 1000))
             setTimer(s.status === "running" ? TIMER_TYPE_ENUM.PLAY : TIMER_TYPE_ENUM.PAUSE)
         })
     }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once on mount

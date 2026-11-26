@@ -79,6 +79,7 @@ test("reconcile resumes a running session with the right remaining time", () => 
     const s = reconcile(db, T0 + 10 * MIN);
     assert.equal(s?.id, id);
     assert.equal(s?.remaining_ms, 15 * MIN);
+    assert.equal(s?.ends_at, T0 + 25 * MIN, "absolute end, independent of when the reply is read");
 });
 
 test("reconcile restores a paused session without counting the pause as focus", () => {
@@ -87,6 +88,7 @@ test("reconcile restores a paused session without counting the pause as focus", 
     const s = reconcile(db, T0 + 60 * MIN);
     assert.equal(s?.status, "paused");
     assert.equal(s?.remaining_ms, 15 * MIN);
+    assert.equal(s?.ends_at, null);
 });
 
 test("reconcile finishes a session that ran out while the app was closed, at its real end", () => {

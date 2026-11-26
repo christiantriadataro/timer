@@ -24,6 +24,9 @@ export interface SessionRow {
 
 export interface ActiveSession extends SessionRow {
     remaining_ms: number;
+    // Absolute end (epoch ms) while running, null while paused. The UI derives remaining time from
+    // this when the reply arrives, so worker start-up latency can't inflate the restored countdown.
+    ends_at: number | null;
 }
 
 // The subset of sqlite-wasm's oo1.DB this module uses.
@@ -154,5 +157,5 @@ export function reconcile(db: Db, now: number): ActiveSession | null {
         endSession(db, row.id, "finished", (row.segment_started_at ?? now) + row.planned_seconds * 1000 - row.focused_ms);
         return null;
     }
-    return {...row, remaining_ms: left};
+    return {...row, remaining_ms: left, ends_at: row.status === "running" ? now + left : null};
 }
