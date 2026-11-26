@@ -2,7 +2,10 @@ import {test, beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import init from "@sqlite.org/sqlite-wasm";
 import {type Db, endSession, migrate, pauseSession, resumeSession, startSession} from "./sessions.ts";
-import {addDays, band, dashboard, isoWeekday, outcomes, streaks, yearGrid} from "./stats.ts";
+import {
+    addDays, band, dashboard, hourlyFocus, isoWeekday, monthGrid, outcomes, periodRange, sessionsIn, shiftAnchor,
+    streaks, weekDates, yearGrid,
+} from "./stats.ts";
 
 const sqlite3 = await init();
 let db: Db;
@@ -94,4 +97,69 @@ test("dashboard streak needs a full focus minute on the day, summed across sessi
     focus("2026-11-25", 0.6, "stopped", 10);
     focus("2026-11-24", 0.5);
     assert.deepEqual(dashboard(db, "2026-11-26").streaks, {current: 1, longest: 1});
+});
+
+test("period ranges per scale (Monday weeks, calendar months, rolling year)", () => {
+    assert.deepEqual(periodRange("day", "2026-11-26"), {from: "2026-11-26", to: "2026-11-26"});
+    assert.deepEqual(periodRange("week", "2026-11-26"), {from: "2026-11-23", to: "2026-11-29"});
+    assert.deepEqual(periodRange("month", "2026-02-14"), {from: "2026-02-01", to: "2026-02-28"});
+    assert.deepEqual(periodRange("month", "2028-02-10"), {from: "2028-02-01", to: "2028-02-29"});
+    assert.deepEqual(periodRange("year", "2026-11-26"), {from: "2025-11-24", to: "2026-11-29"});
+});
+
+test("shifting periods: months land on the 1st, years keep the weekday", () => {
+    assert.equal(shiftAnchor("month", "2026-01-31", 1), "2026-02-01");
+    assert.equal(shiftAnchor("month", "2026-01-15", -1), "2025-12-01");
+    assert.equal(shiftAnchor("week", "2026-11-26", -1), "2026-11-19");
+    assert.equal(shiftAnchor("day", "2026-01-01", -1), "2025-12-31");
+    assert.equal(isoWeekday(shiftAnchor("year", "2026-11-26", -1)), isoWeekday("2026-11-26"));
+});
+
+test("month grid has Monday-start rows with out-of-month days null", () => {
+    const feb = monthGrid("2026-02-10"); // 1 Feb 2026 is a Sunday
+    assert.equal(feb.length, 5);
+    assert.deepEqual(feb[0], [null, null, null, null, null, null, "2026-02-01"]);
+    assert.equal(feb[4][5], "2026-02-28");
+    assert.equal(feb[4][6], null);
+    assert.equal(feb.flat().filter(Boolean).length, 28);
+    assert.deepEqual(weekDates("2026-11-26"), ["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29"]);
+});
+
+test("hourly focus buckets by start hour; drill-down lists every kind, optionally by hour", () => {
+    focus("2026-11-26", 25, "finished", 9);
+    focus("2026-11-26", 10, "stopped", 9);
+    focus("2026-11-26", 20, "finished", 14);
+    const b = startSession(db, {kind: "break", plannedSeconds: 300, tag: "walk", now: at("2026-11-26", 14)});
+    endSession(db, b, "finished", at("2026-11-26", 14) + 5 * MIN);
+
+    const hours = hourlyFocus(db, "2026-11-26");
+    assert.equal(hours.length, 24);
+    assert.equal(hours[9], 35);
+    assert.equal(hours[14], 20);
+    assert.equal(hours.reduce((a, m) => a + m, 0), 55);
+
+    assert.equal(sessionsIn(db, "2026-11-26", "2026-11-26").length, 4);
+    const at14 = sessionsIn(db, "2026-11-26", "2026-11-26", 14);
+    assert.deepEqual(at14.map((s) => [s.kind, s.status, s.tag]), [["focus", "finished", null], ["break", "finished", "walk"]]);
+    assert.equal(sessionsIn(db, "2026-11-20", "2026-11-25").length, 0);
+});
+
+test("dashboard tiles follow the chosen period; streaks stay all-time", () => {
+    focus("2026-11-16", 25); // last week
+    focus("2026-11-24", 25);
+    focus("2026-11-25", 10, "stopped");
+    const week = dashboard(db, "2026-11-26", "week", "2026-11-26");
+    assert.deepEqual([week.from, week.to], ["2026-11-23", "2026-11-29"]);
+    assert.equal(week.outcomes.started, 2);
+    assert.equal(week.outcomes.completionRate, 0.5);
+    assert.equal(week.hours, null);
+    assert.deepEqual(week.streaks, {current: 2, longest: 2});
+
+    const lastWeek = dashboard(db, "2026-11-26", "week", "2026-11-19");
+    assert.equal(lastWeek.outcomes.started, 1);
+    assert.deepEqual(lastWeek.streaks, {current: 2, longest: 2});
+
+    const day = dashboard(db, "2026-11-26", "day", "2026-11-24");
+    assert.equal(day.hours?.[9], 25);
+    assert.equal(day.outcomes.finished, 1);
 });

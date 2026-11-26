@@ -1,11 +1,19 @@
 import {useEffect, useState, useSyncExternalStore} from "react";
 import {Link} from "react-router";
 import {sessionTracker} from "../db/sessionTracker.ts";
-import type {DashboardData} from "../db/stats.ts";
+import {localFields} from "../db/sessions.ts";
+import {type DashboardData, periodRange, type Scale, shiftAnchor} from "../db/stats.ts";
 import Heatmap from "./Heatmap.tsx";
+import {type Bucket, DayGrid, MonthGrid, WeekGrid} from "./Cells.tsx";
+import CellSessions from "./CellSessions.tsx";
+import {periodLabel} from "./format.ts";
 
 const hours = (minutes: number) => (minutes / 60).toFixed(minutes < 600 ? 1 : 0);
 const pct = (rate: number | null) => (rate === null ? "—" : `${Math.round(rate * 100)}%`);
+const SCALES: { scale: Scale; label: string }[] = [
+    {scale: "day", label: "Day"}, {scale: "week", label: "Week"}, {scale: "month", label: "Month"}, {scale: "year", label: "Year"},
+];
+const BAND_LABELS = ["0 min", "1–24 min", "25–49 min", "50–99 min", "100+ min"];
 
 function Stat({label, value, hint}: { label: string; value: string | number; hint?: string }) {
     return (
@@ -18,24 +26,62 @@ function Stat({label, value, hint}: { label: string; value: string | number; hin
 }
 
 function Dashboard() {
+    const today = localFields(Date.now()).local_date;
+    const [scale, setScale] = useState<Scale>("year");
+    const [anchor, setAnchor] = useState(today);
+    const [selected, setSelected] = useState<Bucket | null>(null);
     const [data, setData] = useState<DashboardData | null>(null);
     const [loaded, setLoaded] = useState(false);
     const storageError = useSyncExternalStore(sessionTracker.subscribe, sessionTracker.getError);
 
     useEffect(() => {
-        sessionTracker.dashboard().then((d) => {
+        let live = true;
+        sessionTracker.dashboard(scale, anchor).then((d) => {
+            if (!live) return;
             setData(d ?? null);
             setLoaded(true);
         });
-    }, []);
+        return () => { live = false; };
+    }, [scale, anchor]);
+
+    const range = periodRange(scale, anchor);
+    const hasToday = range.from <= today && today <= range.to;
+    const go = (nextScale: Scale, nextAnchor: string) => {
+        setScale(nextScale);
+        setAnchor(nextAnchor);
+        setSelected(null);
+    };
 
     const o = data?.outcomes;
+    const label = periodLabel(scale, range.from, range.to, today);
+    const minutes = new Map((data?.days ?? []).map((d) => [d.date, d.minutes]));
+    const grid = data && {anchor: data.anchor, today, minutes, selected, onSelect: setSelected};
+
     return (
         <main className="dashboard">
             <header className="dashboard-header">
                 <Link to="/" className="dashboard-back">← Timer</Link>
                 <h1 className="dashboard-title">Focus stats</h1>
             </header>
+
+            <nav className="period-bar" aria-label="Period">
+                <div className="scale-toggle" role="group" aria-label="Scale">
+                    {SCALES.map((s) => (
+                        <button key={s.scale} type="button" className="scale-button" aria-pressed={scale === s.scale}
+                                onClick={() => go(s.scale, anchor > today ? today : anchor)}>
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
+                <div className="period-nav">
+                    <button type="button" className="period-step" aria-label={`Previous ${scale}`}
+                            onClick={() => go(scale, shiftAnchor(scale, anchor, -1))}>‹</button>
+                    <span className="period-label" aria-live="polite">{label}</span>
+                    <button type="button" className="period-step" aria-label={`Next ${scale}`} disabled={range.to >= today}
+                            onClick={() => go(scale, shiftAnchor(scale, anchor, 1))}>›</button>
+                    <button type="button" className="period-today" disabled={hasToday} onClick={() => go(scale, today)}>Today</button>
+                </div>
+            </nav>
 
             {!loaded && <p className="dashboard-status" role="status">Loading your sessions…</p>}
             {loaded && !data && (
@@ -44,7 +90,7 @@ function Dashboard() {
                 </p>
             )}
 
-            {data && o && (
+            {data && o && grid && (
                 <>
                     <dl className="summary" aria-label="Summary">
                         <div>
@@ -64,13 +110,27 @@ function Dashboard() {
                         </div>
                     </dl>
 
-                    <section aria-labelledby="year-heading" className="dashboard-section">
-                        <h2 id="year-heading" className="dashboard-subtitle">
-                            {Math.round(o.focusMinutes)} focus minutes in the last year
+                    <section aria-labelledby="period-heading" className="dashboard-section">
+                        <h2 id="period-heading" className="dashboard-subtitle">
+                            {Math.round(o.focusMinutes)} focus minutes in {label}
                         </h2>
-                        <Heatmap days={data.days} today={data.to}/>
+                        <figure className={`heatmap heatmap--${scale}`} aria-label={`Focus heatmap: ${Math.round(o.focusMinutes)} minutes in ${label}`}>
+                            {scale === "year" && <Heatmap end={data.anchor} {...grid}/>}
+                            {scale === "month" && <MonthGrid {...grid}/>}
+                            {scale === "week" && <WeekGrid {...grid}/>}
+                            {scale === "day" && data.hours && <DayGrid anchor={data.anchor} today={today} hours={data.hours}
+                                                                       selected={selected} onSelect={setSelected}/>}
+                            <figcaption className="heatmap-legend">
+                                <span>Less</span>
+                                {BAND_LABELS.map((b, i) => <span key={b} className={`heatmap-swatch heatmap-band-${i}`} title={b} aria-label={b}/>)}
+                                <span>More</span>
+                            </figcaption>
+                        </figure>
+                        {selected
+                            ? <CellSessions bucket={selected} onClose={() => setSelected(null)}/>
+                            : <p className="dashboard-hint">Select a {scale === "day" ? "time slot" : "day"} to see its sessions.</p>}
                         {o.started === 0 && (
-                            <p className="dashboard-empty">No focus sessions yet. Start a 25-minute lock-in from the timer and it will show up here.</p>
+                            <p className="dashboard-empty">No focus sessions in this period. Start a 25-minute lock-in from the timer and it will show up here.</p>
                         )}
                     </section>
 
@@ -84,7 +144,7 @@ function Dashboard() {
                         </section>
 
                         <section aria-labelledby="outcome-heading" className="dashboard-section">
-                            <h2 id="outcome-heading" className="dashboard-subtitle">Sessions (last year)</h2>
+                            <h2 id="outcome-heading" className="dashboard-subtitle">Sessions in {label}</h2>
                             <dl className="stat-grid">
                                 <Stat label="Focus hours" value={hours(o.focusMinutes)}/>
                                 <Stat label="Started" value={o.started}/>
