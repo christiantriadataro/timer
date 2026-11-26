@@ -1,7 +1,7 @@
 // Dashboard read model. SQL over the sessions table plus pure calendar helpers.
 // Dates are local 'YYYY-MM-DD' strings (the sessions.local_date convention); date math
 // runs in UTC so DST shifts never skip or repeat a day.
-import type {Db} from "./sessions.ts";
+import type {Db, SessionRow} from "./sessions.ts";
 
 export interface DayFocus {
     date: string;
@@ -38,6 +38,8 @@ export interface DashboardData {
     outcomes: Outcomes;     // for [from, to] (spec Q19: tiles follow the toggle)
     streaks: Streaks;       // all-time
     patterns: Patterns;     // for [from, to] (spec Q20)
+    previous: { from: string; to: string; outcomes: Outcomes }; // the period before, for the comparison
+    log: SessionSummary[];  // every session in [from, to] under the tag filter (spec Q23)
     tags: TagTotal[];       // for [from, to]
     allTags: (string | null)[]; // every tag ever used, for the filter menu
 }
@@ -316,5 +318,18 @@ export function dashboard(db: Db, today: string, scale: Scale = "year", anchor: 
         patterns: patterns(db, from, to, tag),
         tags: tagTotals(db, from, to, tag),
         allTags: allTags(db),
+        previous: previousPeriod(db, scale, anchor, tag),
+        log: sessionsIn(db, from, to, null, tag),
     };
+}
+
+// The period just before the one shown, same scale and tag filter (spec Q22: comparison follows the toggle).
+export function previousPeriod(db: Db, scale: Scale, anchor: string, tag?: TagFilter) {
+    const {from, to} = periodRange(scale, shiftAnchor(scale, anchor, -1));
+    return {from, to, outcomes: outcomes(db, from, to, tag)};
+}
+
+// Every column of every session, oldest first, for the CSV export (spec Q24: ignores toggle and filter).
+export function allSessions(db: Db): SessionRow[] {
+    return select<SessionRow>(db, "SELECT * FROM sessions ORDER BY started_at, id", []).map((r) => ({...r}));
 }

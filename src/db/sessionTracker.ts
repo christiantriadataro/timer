@@ -84,6 +84,9 @@ export const sessionTracker = {
     sessions(from: string, to: string, hour: number | null, tag: TagFilter) {
         return enqueue(() => call("sessionsIn", from, to, hour, tag));
     },
+    allSessions() {
+        return enqueue(() => call("allSessions"));
+    },
     subscribe(listener: () => void) {
         listeners.add(listener);
         return () => { listeners.delete(listener); };

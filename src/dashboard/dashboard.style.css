@@ -106,6 +106,35 @@
     .stat-value { @apply text-3xl mt-2 leading-none tabular-nums; }
     .stat-hint { @apply text-xs text-[#7C7C8A] mt-2; }
 
+    /* TIMER-0009 functional baseline; visual pass pending. */
+    .compare-caption { @apply mb-3 text-sm text-[#A8A8B3]; }
+    .compare-note { @apply text-[#7C7C8A]; }
+    .compare-grid { @apply grid grid-cols-1 gap-3 sm:grid-cols-3; }
+    .compare-item { @apply rounded-lg bg-[#202024] p-4; }
+    .compare-label { @apply text-sm text-[#A8A8B3]; }
+    .compare-now { @apply mt-2 text-2xl tabular-nums; }
+    .compare-delta { @apply mt-1 text-sm tabular-nums; }
+    .compare-item[data-trend="up"] .compare-delta { @apply text-[#2FBF63]; }
+    .compare-item[data-trend="down"] .compare-delta { @apply text-[#F7B05A]; }
+    .compare-item[data-trend="flat"] .compare-delta, .compare-item[data-trend="none"] .compare-delta { @apply text-[#7C7C8A]; }
+    .compare-before { @apply mt-1 text-xs text-[#7C7C8A]; }
+
+    .session-log-bar { @apply mb-3 flex items-center justify-between gap-3; }
+    .session-log-count { @apply text-sm text-[#A8A8B3]; }
+    .session-log-export { @apply rounded-md bg-[#202024] px-3 py-1.5 text-sm text-[#E1E1E6] hover:bg-[#29292E] disabled:opacity-50; }
+    .session-log-scroll { @apply max-h-[28rem] overflow-auto rounded-lg border border-[#29292E]; }
+    .session-log-table { @apply w-full min-w-[560px] text-left text-sm; }
+    .session-log-table th { @apply sticky top-0 bg-[#202024] font-normal text-[#A8A8B3]; }
+    .session-log-sort { @apply flex w-full items-center gap-1 px-3 py-2 text-left hover:text-[#E1E1E6]; }
+    .session-log-table td { @apply border-t border-[#29292E] px-3 py-2 align-top; }
+    .session-log-when { @apply flex flex-col; }
+    .session-log-time { @apply text-xs text-[#7C7C8A] tabular-nums; }
+    .session-log-num { @apply tabular-nums; }
+    .session-log-untagged { @apply italic text-[#7C7C8A]; }
+    .session-log-row--break { @apply text-[#A8A8B3]; }
+    .session-log-status--finished { @apply text-[#2FBF63]; }
+    .session-log-status--stopped { @apply text-[#F7B05A]; }
+
     /* Tag filter: third item of the control row; its own full-width row on a phone. */
     .tag-filter { @apply flex w-full sm:w-auto items-center gap-2 text-sm; }
     .tag-filter-label { @apply text-[#A8A8B3]; }

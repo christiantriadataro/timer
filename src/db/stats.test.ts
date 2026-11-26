@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import init from "@sqlite.org/sqlite-wasm";
 import {type Db, endSession, migrate, pauseSession, resumeSession, startSession} from "./sessions.ts";
 import {
-    addDays, band, dailyFocus, dashboard, hourlyFocus, isoWeekday, monthGrid, outcomes, patterns, periodRange, sessionsIn,
+    addDays, allSessions, band, dailyFocus, dashboard, hourlyFocus, isoWeekday, monthGrid, outcomes, patterns, periodRange, sessionsIn,
     shiftAnchor, streaks, tagTotals, weekDates, yearGrid,
 } from "./stats.ts";
 
@@ -237,6 +237,38 @@ test("tag filter applies to every query, including untagged and streaks", () => 
     assert.deepEqual(dashboard(db, "2026-11-26").streaks, {current: 3, longest: 3});
     assert.deepEqual(dsa.tags, [{tag: "DSA", sessions: 2, minutes: 40}]);
     assert.deepEqual(dsa.allTags, ["DSA", "AWS", null]);
+});
+
+test("comparison: the previous period of the same scale, under the same tag filter", () => {
+    tagged("2026-11-17", 25, "DSA");          // last week
+    tagged("2026-11-18", 10, "DSA", "stopped");
+    tagged("2026-11-24", 25, "DSA");          // this week
+    tagged("2026-11-25", 20, "AWS");
+    const week = dashboard(db, "2026-11-26", "week", "2026-11-26");
+    assert.deepEqual([week.previous.from, week.previous.to], ["2026-11-16", "2026-11-22"]);
+    assert.equal(week.previous.outcomes.started, 2);
+    assert.equal(week.previous.outcomes.completionRate, 0.5);
+    assert.equal(week.outcomes.focusMinutes, 45);
+    const dsa = dashboard(db, "2026-11-26", "week", "2026-11-26", "DSA");
+    assert.equal(dsa.outcomes.focusMinutes, 25);
+    assert.equal(dsa.previous.outcomes.focusMinutes, 35);
+    const month = dashboard(db, "2026-11-26", "month", "2026-11-26");
+    assert.deepEqual([month.previous.from, month.previous.to], ["2026-10-01", "2026-10-31"]);
+    assert.equal(month.previous.outcomes.started, 0);
+});
+
+test("log lists the period's sessions under the filter; export lists everything", () => {
+    tagged("2026-11-17", 25, "DSA");
+    tagged("2026-11-24", 25, "DSA");
+    tagged("2026-11-25", 20, "AWS");
+    const b = startSession(db, {kind: "break", plannedSeconds: 300, now: at("2026-11-25", 10)});
+    endSession(db, b, "finished", at("2026-11-25", 10) + 5 * MIN);
+    assert.equal(dashboard(db, "2026-11-26", "week", "2026-11-26").log.length, 3);
+    assert.deepEqual(dashboard(db, "2026-11-26", "week", "2026-11-26", "DSA").log.map((s) => s.tag), ["DSA"]);
+    const all = allSessions(db);
+    assert.equal(all.length, 4);
+    assert.equal(all[0].local_date, "2026-11-17");
+    assert.ok("local_weekday" in all[0] && "paused_at" in all[0]);
 });
 
 test("tag totals rank tags by minutes, with untagged as null", () => {
