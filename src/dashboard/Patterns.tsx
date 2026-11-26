@@ -84,7 +84,8 @@ export function PatternStats({patterns}: { patterns: PatternData }) {
         ["Peak hour", patterns.peakHour === null ? "—" : hourLabel(patterns.peakHour), "most focus minutes"],
         ["Best weekday", patterns.bestWeekday === null ? "—" : WEEKDAY_NAMES[patterns.bestWeekday - 1]],
         ["Avg session", patterns.avgSessionMinutes === null ? "—" : `${Math.round(patterns.avgSessionMinutes)} min`, "finished + stopped"],
-        ["Break : focus", patterns.breakRatio === null ? "—" : `1 : ${patterns.breakRatio === 0 ? "∞" : (1 / patterns.breakRatio).toFixed(1)}`, "break minutes per focus minute"],
+        // Shown as "1 : N" = N focus minutes per break minute; no breaks (common under a tag filter) reads as such.
+        ["Break : focus", patterns.breakRatio === null ? "—" : patterns.breakRatio === 0 ? "no breaks" : `1 : ${(1 / patterns.breakRatio).toFixed(1)}`, "focus minutes per break minute"],
     ];
     return (
         <dl className="stat-grid stat-grid--four">
