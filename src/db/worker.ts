@@ -2,7 +2,7 @@
 // needs no COOP/COEP headers, so the static Vercel deploy stays as it is.
 import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
 import {type Db, endSession, migrate, pauseSession, reconcile, resumeSession, startSession} from "./sessions.ts";
-import {dashboard} from "./stats.ts";
+import {dashboard, sessionsIn} from "./stats.ts";
 
 // The SAH pool takes exclusive handles, so only one tab can hold the database (spec Q16).
 const OTHER_TAB_MESSAGE = "The timer is open in another tab: close that tab and reload this one to track sessions or see stats here.";
@@ -28,6 +28,7 @@ const ops = {
     end: endSession,
     reconcile,
     dashboard,
+    sessionsIn,
 };
 
 export type DbOps = typeof ops;
