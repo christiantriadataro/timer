@@ -1,13 +1,15 @@
 import useTime from "../time/useTime.ts";
 import useTimer from "../timer/useTimer.ts";
-import {useState} from "react";
+import {useState, useSyncExternalStore} from "react";
+import {sessionTracker} from "../db/sessionTracker.ts";
+import {type SessionKind, TAG_MAX_LENGTH} from "../db/sessions.ts";
 import {TIMER_TYPE_ENUM} from "../timer/time.types.ts";
 import PlayLogo from "../assets/icons/play.svg";
 import PauseLogo from "../assets/icons/pause.svg";
 import TimerIcon from "../assets/icons/timer.svg";
 import HistoryIcon from "../assets/icons/history.svg";
 import StopIcon from "../assets/icons/stop.svg";
-import {BREAK_TIME_SECONDS, TODO_TIME_SECONDS} from "./header.constants.ts";
+import {BREAK_TIME_SECONDS, SHORT_BREAK_TIME_SECONDS, TODO_TIME_SECONDS} from "./header.constants.ts";
 
 interface IButtonItem {
     handler: () => void,
@@ -20,10 +22,18 @@ interface IListItem {
     label: string;
 }
 
-function OpenToolTip({item, isOpen}: { item: IListItem[], isOpen: boolean }) {
+function OpenToolTip({item, isOpen, tag, setTag}: { item: IListItem[], isOpen: boolean, tag: string, setTag: (tag: string) => void }) {
     return (
         <div
             className={`${isOpen ? "absolute" : "hidden"} open-tool-tip`}>
+            <input
+                aria-label="Session tag (optional)"
+                placeholder="Tag (optional), e.g. DSA"
+                value={tag}
+                maxLength={TAG_MAX_LENGTH}
+                onChange={(e) => setTag(e.target.value)}
+                className="tag-input"
+            />
             {item.map((item: IListItem, index: number) => (
                 <ListItem key={index} handler={item.handler} label={item.label}/>
             ))}
@@ -67,35 +77,26 @@ function ListItem({handler, label}: IListItem) {
 }
 
 function Header() {
-    const {setTime} = useTime();
-    const {timer, setTimer} = useTimer()
+    const {time, setTime} = useTime();
+    const {timer, setTimer, kind, setKind, tag, setTag} = useTimer()
     const [isOpenTodoMenu, setIsOpenTodoMenu] = useState(false)
+    const storageError = useSyncExternalStore(sessionTracker.subscribe, sessionTracker.getError)
 
     const handleTodoMenu = () => {
         setIsOpenTodoMenu(!isOpenTodoMenu)
     }
 
-    const handleBreakTime = () => {
-        setTime(BREAK_TIME_SECONDS)
-        // setTime(3)
-        handleTodoMenu()
-        setTimer(TIMER_TYPE_ENUM.PAUSE)
-    }
-
-    const handleTodoTime = () => {
-        setTime(TODO_TIME_SECONDS)
-        handleTodoMenu()
-        setTimer(TIMER_TYPE_ENUM.PAUSE)
-    }
-
-    const handleBreakTime5 = () => {
-        const BREAK_TIME_FIVE_SECODNS = 5 * 60
-         setTime(BREAK_TIME_FIVE_SECODNS)
+    // Picking a preset mid-session ends that session as stopped (spec Q2).
+    const choosePreset = (seconds: number, presetKind: SessionKind) => () => {
+        sessionTracker.stop()
+        setKind(presetKind)
+        setTime(seconds)
         handleTodoMenu()
         setTimer(TIMER_TYPE_ENUM.PAUSE)
     }
 
     const handleStop = () => {
+        sessionTracker.stop()
         setTimer(TIMER_TYPE_ENUM.STOP)
     }
 
@@ -105,23 +106,25 @@ function Header() {
 
     const handlePlay = () => {
         if (timer === TIMER_TYPE_ENUM.PAUSE) {
+            sessionTracker.play(kind, time, tag)
             setTimer(TIMER_TYPE_ENUM.PLAY)
         } else if (timer === TIMER_TYPE_ENUM.PLAY) {
+            sessionTracker.pause()
             setTimer(TIMER_TYPE_ENUM.PAUSE)
         }
     }
 
     const LIST_ITEM: IListItem[] = [
         {
-            handler: handleTodoTime,
+            handler: choosePreset(TODO_TIME_SECONDS, "focus"),
             label: "Lock in Time: 25 Minutes"
         },
         {
-            handler: handleBreakTime,
+            handler: choosePreset(BREAK_TIME_SECONDS, "break"),
             label: "Break Time: 10 Minutes"
         },
-         {
-            handler: handleBreakTime5,
+        {
+            handler: choosePreset(SHORT_BREAK_TIME_SECONDS, "break"),
             label: "Break Time: 5 Minutes"
         },
     ]
@@ -149,7 +152,8 @@ function Header() {
         <div className="header-container">
             <Logo handlePlay={handlePlay}/>
             <ButtonGroup item={BUTTON_ITEM}/>
-            <OpenToolTip isOpen={isOpenTodoMenu} item={LIST_ITEM}/>
+            <OpenToolTip isOpen={isOpenTodoMenu} item={LIST_ITEM} tag={tag} setTag={setTag}/>
+            {storageError && <p role="status" className="storage-error">Stats not saving: {storageError}</p>}
         </div>
     )
 }
