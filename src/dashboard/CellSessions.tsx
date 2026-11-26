@@ -1,13 +1,13 @@
 import {useEffect, useState} from "react";
 import {sessionTracker} from "../db/sessionTracker.ts";
-import type {SessionSummary} from "../db/stats.ts";
+import type {SessionSummary, TagFilter} from "../db/stats.ts";
 import type {Bucket} from "./Cells.tsx";
 import {clock, formatDate, hourLabel} from "./format.ts";
 
 const STATUS_LABEL: Record<string, string> = {finished: "Finished", stopped: "Stopped early", running: "Running", paused: "Paused"};
 
 // Drill-down panel under the heatmap: every session (focus and break) in the clicked bucket.
-function CellSessions({bucket, onClose}: { bucket: Bucket; onClose: () => void }) {
+function CellSessions({bucket, tag, onClose}: { bucket: Bucket; tag: TagFilter; onClose: () => void }) {
     const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
     const [failed, setFailed] = useState(false);
 
@@ -15,13 +15,13 @@ function CellSessions({bucket, onClose}: { bucket: Bucket; onClose: () => void }
         let live = true;
         setSessions(null);
         setFailed(false);
-        sessionTracker.sessions(bucket.from, bucket.to, bucket.hour).then((rows) => {
+        sessionTracker.sessions(bucket.from, bucket.to, bucket.hour, tag).then((rows) => {
             if (!live) return;
             if (rows === undefined) setFailed(true);
             else setSessions(rows);
         });
         return () => { live = false; };
-    }, [bucket.from, bucket.to, bucket.hour]);
+    }, [bucket.from, bucket.to, bucket.hour, tag]);
 
     const title = bucket.hour === null
         ? formatDate(bucket.from)

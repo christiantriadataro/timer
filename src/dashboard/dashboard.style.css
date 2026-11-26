@@ -105,4 +105,51 @@
     .stat-label { @apply text-sm text-[#A8A8B3]; }
     .stat-value { @apply text-3xl mt-2 leading-none tabular-nums; }
     .stat-hint { @apply text-xs text-[#7C7C8A] mt-2; }
+
+    /* Tag filter: third item of the control row; its own full-width row on a phone. */
+    .tag-filter { @apply flex w-full sm:w-auto items-center gap-2 text-sm; }
+    .tag-filter-label { @apply text-[#A8A8B3]; }
+    .tag-filter-select { @apply h-10 min-w-0 flex-1 sm:flex-none sm:min-w-36 cursor-pointer rounded-lg bg-[#202024] px-3 text-sm text-[#E1E1E6] hover:bg-[#29292E] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white; color-scheme: dark; }
+
+    .pattern-callout { @apply mb-5 border-l-2 border-[#5B93EA] pl-3 text-sm leading-6 text-[#A8A8B3]; }
+    .pattern-callout strong { @apply font-normal text-[#E1E1E6]; }
+    .hw-pair { @apply grid gap-8 lg:grid-cols-2 lg:gap-4; }
+    .hw-scroll { @apply overflow-x-auto; }
+    /* Fixed layout: 24 equal hour columns after the weekday column, so both tables line up. */
+    .hw-table { @apply w-full min-w-[300px] max-w-[512px] table-fixed border-separate border-spacing-[2px]; }
+    .hw-caption { @apply pb-2 text-left text-sm text-[#A8A8B3]; }
+    .hw-corner { @apply w-8; }
+    .hw-hour { @apply overflow-visible whitespace-nowrap pb-0.5 text-left text-[10px] leading-none font-normal tabular-nums text-[#7C7C8A]; }
+    .hw-weekday { @apply text-left text-[10px] leading-none font-normal text-[#7C7C8A]; }
+    .hw-cell { @apply rounded-[2px] p-0; }
+    /* Keeps each cell square at any table width. */
+    .hw-cell::before { content: ""; @apply block aspect-square; }
+    /* Effectiveness: clay -> plum -> blue, lighter = better; never green, so it can't be read as minutes. */
+    .eff-0 { @apply bg-[#6B3A2C]; }
+    .eff-1 { @apply bg-[#63486B]; }
+    .eff-2 { @apply bg-[#4862AE]; }
+    .eff-3 { @apply bg-[#5B93EA]; }
+    .eff-4 { @apply bg-[#B3D2FF]; }
+    /* Not enough data: hollow, so it differs from a filled 0-minute cell. */
+    .eff-none { @apply bg-transparent shadow-[inset_0_0_0_1px_#29292E]; }
+    .hw-legend { @apply mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#7C7C8A]; }
+    .hw-legend-item { @apply inline-flex items-center gap-1.5; }
+    .hw-swatch { @apply inline-block h-3 w-3 rounded-[3px]; }
+
+    .dashboard-columns--even > :last-child { @apply lg:col-span-1; }
+    .dashboard-columns--even { @apply lg:grid-cols-2; }
+    .stat-grid--four { @apply sm:grid-cols-2; }
+    .stat-grid--four .stat-value { @apply text-2xl sm:text-3xl; }
+    .tag-list { @apply flex flex-col gap-1; }
+    /* Phone: name / minutes / sessions, bar on its own line. From sm: name, bar, minutes, sessions in one row. */
+    .tag-button { @apply grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_5.5rem] items-center gap-x-3 gap-y-2 rounded-lg px-3 py-3 text-left text-sm hover:bg-[#202024] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:grid-cols-[minmax(0,7rem)_minmax(0,1fr)_4.5rem_5.5rem]; }
+    .tag-button[aria-pressed="true"] { @apply bg-[#29292E] shadow-[inset_2px_0_0_#2FBF63]; }
+    .tag-name { @apply truncate; }
+    .tag-name--untagged { @apply italic text-[#A8A8B3]; }
+    .tag-bar { @apply order-last col-span-3 block h-1.5 rounded-full bg-[#29292E] sm:order-none sm:col-span-1; }
+    .tag-button[aria-pressed="true"] .tag-bar { @apply bg-[#3A3A41]; }
+    .tag-bar-fill { @apply block h-1.5 rounded-full bg-[#2FBF63]; }
+    .tag-name--untagged ~ .tag-bar .tag-bar-fill { @apply bg-[#7C7C8A]; }
+    .tag-minutes { @apply text-right tabular-nums; }
+    .tag-sessions { @apply text-right text-xs tabular-nums text-[#7C7C8A]; }
 }

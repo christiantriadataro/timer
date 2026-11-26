@@ -2,7 +2,7 @@
 // and in order, and exposes the last storage error so the UI can say stats aren't being saved.
 import type {DbOps, DbRequest} from "./worker.ts";
 import {type ActiveSession, localFields, type SessionKind} from "./sessions.ts";
-import type {Scale} from "./stats.ts";
+import type {Scale, TagFilter} from "./stats.ts";
 
 const worker = new Worker(new URL("./worker.ts", import.meta.url), {type: "module"});
 const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
@@ -78,11 +78,11 @@ export const sessionTracker = {
         });
     },
     // Queued behind pending writes, so the dashboard always includes the latest event.
-    dashboard(scale: Scale, anchor: string) {
-        return enqueue(() => call("dashboard", localFields(Date.now()).local_date, scale, anchor));
+    dashboard(scale: Scale, anchor: string, tag: TagFilter) {
+        return enqueue(() => call("dashboard", localFields(Date.now()).local_date, scale, anchor, tag));
     },
-    sessions(from: string, to: string, hour: number | null) {
-        return enqueue(() => call("sessionsIn", from, to, hour));
+    sessions(from: string, to: string, hour: number | null, tag: TagFilter) {
+        return enqueue(() => call("sessionsIn", from, to, hour, tag));
     },
     subscribe(listener: () => void) {
         listeners.add(listener);
