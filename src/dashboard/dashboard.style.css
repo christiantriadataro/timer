@@ -199,4 +199,20 @@
     .tag-name--untagged ~ .tag-bar .tag-bar-fill { @apply bg-[#7C7C8A]; }
     .tag-minutes { @apply text-right tabular-nums; }
     .tag-sessions { @apply text-right text-xs tabular-nums text-[#7C7C8A]; }
+
+    /* Backup: secondary controls at the foot of the page; buttons stack full-width on a phone. */
+    .backup-actions { @apply flex flex-col gap-3 sm:flex-row; }
+    .backup-button { @apply h-10 cursor-pointer rounded-lg bg-[#202024] px-4 text-sm text-[#A8A8B3] hover:bg-[#29292E] hover:text-[#E1E1E6] disabled:cursor-default disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white; }
+    /* Restore replaces everything: outlined with a muted warm edge, cautious rather than alarming. */
+    .backup-button--restore { @apply bg-transparent shadow-[inset_0_0_0_1px_#F7B05A66] hover:bg-[#F7B05A]/10; }
+    .backup-message { @apply mt-4 border-l-2 pl-3 text-sm leading-6; }
+    .backup-message--ok { @apply border-[#2FBF63] text-[#E1E1E6]; }
+    .backup-message--error { @apply border-[#F75A68] text-[#F75A68]; }
+    /* Storage status: a quiet line led by a status dot. */
+    .backup-persist { @apply mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 pl-4 relative text-xs leading-5 text-[#7C7C8A]; }
+    .backup-persist::before { content: ""; @apply absolute left-0 top-1.5 h-2 w-2 rounded-full bg-[#7C7C8A]; }
+    .backup-persist--persisted::before { @apply bg-[#2FBF63]; }
+    .backup-persist--not-persisted::before, .backup-persist--denied::before { @apply bg-[#F7B05A]; }
+    .backup-persist--unknown::before { @apply bg-[#3A3A41]; }
+    .backup-persist-button { @apply cursor-pointer rounded-md bg-[#202024] px-2 py-1 text-xs text-[#A8A8B3] hover:bg-[#29292E] hover:text-[#E1E1E6] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white; }
 }
