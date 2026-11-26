@@ -1,3 +1,4 @@
+import {useEffect, useRef} from "react";
 import {band, type DayFocus, yearGrid} from "../db/stats.ts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -20,12 +21,17 @@ function Heatmap({days, today}: { days: DayFocus[]; today: string }) {
             ? MONTHS[+first.slice(5, 7) - 1] : "";
     };
 
+    // Narrow screens scroll the graph inside its box; start at the most recent weeks.
+    const scroller = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (scroller.current) scroller.current.scrollLeft = scroller.current.scrollWidth;
+    }, []);
+
     return (
         <figure className="heatmap" aria-label={`Focus heatmap: ${total} minutes in the last year`}>
-            <div className="heatmap-scroll">
+            <div className="heatmap-scroll" ref={scroller}>
                 <div className="heatmap-grid">
                     <div className="heatmap-weekdays" aria-hidden="true">
-                        <span className="heatmap-month"/>
                         {WEEKDAYS.map((d, i) => <span key={i} className="heatmap-weekday">{d}</span>)}
                     </div>
                     {weeks.map((week, w) => (
