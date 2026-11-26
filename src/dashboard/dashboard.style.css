@@ -106,32 +106,50 @@
     .stat-value { @apply text-3xl mt-2 leading-none tabular-nums; }
     .stat-hint { @apply text-xs text-[#7C7C8A] mt-2; }
 
-    /* TIMER-0009 functional baseline; visual pass pending. */
+    /* Comparison: one quiet strip, not a second summary row. Value and delta share a line; "before" is secondary. */
     .compare-caption { @apply mb-3 text-sm text-[#A8A8B3]; }
+    .compare-previous { @apply text-[#E1E1E6]; }
     .compare-note { @apply text-[#7C7C8A]; }
-    .compare-grid { @apply grid grid-cols-1 gap-3 sm:grid-cols-3; }
-    .compare-item { @apply rounded-lg bg-[#202024] p-4; }
-    .compare-label { @apply text-sm text-[#A8A8B3]; }
-    .compare-now { @apply mt-2 text-2xl tabular-nums; }
-    .compare-delta { @apply mt-1 text-sm tabular-nums; }
+    .compare-grid { @apply grid grid-cols-1 divide-y divide-[#29292E] rounded-lg bg-[#202024] sm:grid-cols-3 sm:divide-x sm:divide-y-0; }
+    /* Phone: a compact row (label + before on the left, value + delta on the right). */
+    .compare-item { @apply grid items-baseline gap-x-3 gap-y-1 px-4 py-3 sm:px-5 sm:py-4; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label now" "before delta"; }
+    .compare-label { @apply text-sm text-[#A8A8B3]; grid-area: label; }
+    .compare-now { @apply text-right text-xl leading-7 tabular-nums; grid-area: now; }
+    .compare-delta { @apply text-right text-sm tabular-nums; grid-area: delta; }
+    .compare-before { @apply text-xs text-[#7C7C8A]; grid-area: before; }
+    @media (width >= 40rem) {
+        .compare-item { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "label label" "now delta" "before before"; }
+        .compare-now { @apply text-left text-2xl leading-8; }
+        .compare-delta { @apply text-left; }
+    }
     .compare-item[data-trend="up"] .compare-delta { @apply text-[#2FBF63]; }
     .compare-item[data-trend="down"] .compare-delta { @apply text-[#F7B05A]; }
     .compare-item[data-trend="flat"] .compare-delta, .compare-item[data-trend="none"] .compare-delta { @apply text-[#7C7C8A]; }
-    .compare-before { @apply mt-1 text-xs text-[#7C7C8A]; }
 
     .session-log-bar { @apply mb-3 flex items-center justify-between gap-3; }
-    .session-log-count { @apply text-sm text-[#A8A8B3]; }
-    .session-log-export { @apply rounded-md bg-[#202024] px-3 py-1.5 text-sm text-[#E1E1E6] hover:bg-[#29292E] disabled:opacity-50; }
+    .session-log-count { @apply text-sm text-[#A8A8B3] tabular-nums; }
+    .session-log-export { @apply h-10 shrink-0 cursor-pointer rounded-lg bg-[#202024] px-3 text-sm text-[#A8A8B3] hover:bg-[#29292E] hover:text-[#E1E1E6] disabled:cursor-default disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white; }
+    /* The table scrolls inside this box in both directions; the header row stays pinned. */
     .session-log-scroll { @apply max-h-[28rem] overflow-auto rounded-lg border border-[#29292E]; }
-    .session-log-table { @apply w-full min-w-[560px] text-left text-sm; }
-    .session-log-table th { @apply sticky top-0 bg-[#202024] font-normal text-[#A8A8B3]; }
-    .session-log-sort { @apply flex w-full items-center gap-1 px-3 py-2 text-left hover:text-[#E1E1E6]; }
-    .session-log-table td { @apply border-t border-[#29292E] px-3 py-2 align-top; }
-    .session-log-when { @apply flex flex-col; }
+    .session-log-table { @apply w-full min-w-[600px] text-left text-sm; }
+    .session-log-table th { @apply sticky top-0 z-10 bg-[#202024] p-0 font-normal text-[#A8A8B3] shadow-[inset_0_-1px_0_#29292E]; }
+    .session-log-table th[aria-sort="ascending"], .session-log-table th[aria-sort="descending"] { @apply text-[#E1E1E6]; }
+    .session-log-sort { @apply flex w-full cursor-pointer items-center gap-1 whitespace-nowrap px-3 py-2.5 text-left hover:bg-[#29292E] hover:text-[#E1E1E6] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white; }
+    .session-log-arrow { @apply inline-block w-3 text-xs; }
+    /* Unsorted columns hint that they sort, on hover or keyboard focus. */
+    th[aria-sort="none"] .session-log-sort:hover .session-log-arrow::after,
+    th[aria-sort="none"] .session-log-sort:focus-visible .session-log-arrow::after { content: "↕"; @apply text-[#7C7C8A]; }
+    .session-log-table td { @apply whitespace-nowrap border-t border-[#29292E] px-3 py-2.5 align-middle; }
+    .session-log-table tbody tr:first-child td { @apply border-t-0; }
+    .session-log-row:hover td { @apply bg-[#202024]/60; }
+    /* Focus and Pauses are numeric: right-aligned, header included. */
+    .session-log-table th:nth-child(n+5) .session-log-sort { @apply flex-row-reverse; }
+    .session-log-num { @apply text-right tabular-nums; }
+    .session-log-date, .session-log-time { @apply block; }
     .session-log-time { @apply text-xs text-[#7C7C8A] tabular-nums; }
-    .session-log-num { @apply tabular-nums; }
     .session-log-untagged { @apply italic text-[#7C7C8A]; }
-    .session-log-row--break { @apply text-[#A8A8B3]; }
+    .session-log-row--break { @apply text-[#7C7C8A]; }
+    .session-log-row--break .session-log-status { @apply opacity-70; }
     .session-log-status--finished { @apply text-[#2FBF63]; }
     .session-log-status--stopped { @apply text-[#F7B05A]; }
 
