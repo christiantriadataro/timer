@@ -1,6 +1,6 @@
 // Main-thread side of the session database: forwards timer events to the worker, one at a time
 // and in order, and exposes the last storage error so the UI can say stats aren't being saved.
-import type {DbOps, DbRequest} from "./worker.ts";
+import type {AdminOps, DbOps, DbRequest} from "./worker.ts";
 import {type ActiveSession, localFields, type SessionKind} from "./sessions.ts";
 import type {Scale, TagFilter} from "./stats.ts";
 
@@ -24,6 +24,14 @@ function call<K extends keyof DbOps>(op: K, ...args: Extract<DbRequest, { op: K 
     });
 }
 
+function callAdmin<K extends keyof AdminOps>(op: K, args: Extract<DbRequest, { op: K }>["args"], transfer: Transferable[] = []) {
+    const id = nextId++;
+    return new Promise<Awaited<ReturnType<AdminOps[K]>>>((resolve, reject) => {
+        pending.set(id, {resolve: resolve as (v: unknown) => void, reject});
+        worker.postMessage({id, admin: true, op, args}, transfer);
+    });
+}
+
 let error: string | null = null;
 const listeners = new Set<() => void>();
 function setError(message: string | null) {
@@ -41,6 +49,13 @@ function enqueue<T>(task: () => Promise<T>): Promise<T | undefined> {
         (e: Error) => { setError(e.message); return undefined; },
     );
     queue = run;
+    return run;
+}
+
+// Same ordering, but the caller gets the error (backup UI shows it inline, not as the global banner).
+function serial<T>(task: () => Promise<T>): Promise<T> {
+    const run = queue.then(task);
+    queue = run.catch(() => undefined);
     return run;
 }
 
@@ -86,6 +101,19 @@ export const sessionTracker = {
     },
     allSessions() {
         return enqueue(() => call("allSessions"));
+    },
+    exportDb() {
+        return serial(() => callAdmin("exportDb", []));
+    },
+    // Refused while a session is open: the restored file may not contain it, and the
+    // countdown would keep writing to a row that no longer exists.
+    importDb(bytes: Uint8Array) {
+        return serial(async () => {
+            if (activeId !== null) throw new Error("Stop or finish the current session before restoring a backup.");
+            const result = await callAdmin("importDb", [bytes], [bytes.buffer]);
+            if (error) setError(null);
+            return result;
+        });
     },
     subscribe(listener: () => void) {
         listeners.add(listener);

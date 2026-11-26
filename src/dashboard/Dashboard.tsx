@@ -9,6 +9,7 @@ import {type Bucket, DayGrid, MonthGrid, WeekGrid} from "./Cells.tsx";
 import CellSessions from "./CellSessions.tsx";
 import Compare from "./Compare.tsx";
 import SessionLog from "./SessionLog.tsx";
+import Backup from "./Backup.tsx";
 import {periodLabel} from "./format.ts";
 
 const hours = (minutes: number) => (minutes / 60).toFixed(minutes < 600 ? 1 : 0);
@@ -41,6 +42,7 @@ function Dashboard() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loaded, setLoaded] = useState(false);
     const [tag, setTag] = useState<TagFilter>(undefined);
+    const [refresh, setRefresh] = useState(0); // bumped after a restore to reload everything
     const storageError = useSyncExternalStore(sessionTracker.subscribe, sessionTracker.getError);
 
     useEffect(() => {
@@ -51,7 +53,7 @@ function Dashboard() {
             setLoaded(true);
         });
         return () => { live = false; };
-    }, [scale, anchor, tag]);
+    }, [scale, anchor, tag, refresh]);
 
     const pickTag = (next: TagFilter) => {
         setTag(next);
@@ -207,6 +209,13 @@ function Dashboard() {
                         <SessionLog sessions={data.log}/>
                     </section>
                 </>
+            )}
+
+            {loaded && (
+                <section aria-labelledby="backup-heading" className="dashboard-section">
+                    <h2 id="backup-heading" className="dashboard-subtitle">Backup</h2>
+                    <Backup onRestored={() => setRefresh((n) => n + 1)}/>
+                </section>
             )}
         </main>
     );
