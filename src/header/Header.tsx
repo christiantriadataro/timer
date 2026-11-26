@@ -6,11 +6,13 @@ import PlayLogo from "../assets/icons/play.svg";
 import PauseLogo from "../assets/icons/pause.svg";
 import TimerIcon from "../assets/icons/timer.svg";
 import HistoryIcon from "../assets/icons/history.svg";
+import StopIcon from "../assets/icons/stop.svg";
 import {BREAK_TIME_SECONDS, TODO_TIME_SECONDS} from "./header.constants.ts";
 
 interface IButtonItem {
     handler: () => void,
     icon: string;
+    label: string;
 }
 
 interface IListItem {
@@ -33,7 +35,7 @@ function ButtonGroup({item}: { item: IButtonItem[] }) {
     return (
         <div className="button-container">
             {item.map((item, index) => (
-                <ButtonIcon key={index} icon={item.icon} handler={item.handler}/>
+                <ButtonIcon key={index} {...item}/>
             ))}
         </div>
     )
@@ -47,11 +49,11 @@ function Logo({handlePlay}: { handlePlay: () => void }) {
     )
 }
 
-function ButtonIcon({icon, handler}: { icon: string, handler?: () => void }) {
+function ButtonIcon({icon, handler, label}: IButtonItem) {
     return (
-        <div className="button-icon" onClick={handler}>
+        <button type="button" aria-label={label} title={label} className="button-icon" onClick={handler}>
             <img src={icon} alt="" className="h-[26px] lg:h-[35px] lg:w-[35px]"/>
-        </div>
+        </button>
     )
 }
 
@@ -93,6 +95,10 @@ function Header() {
         setTimer(TIMER_TYPE_ENUM.PAUSE)
     }
 
+    const handleStop = () => {
+        setTimer(TIMER_TYPE_ENUM.STOP)
+    }
+
     const handleHistory = () => {
         // TODO: provides line chart for the user
     }
@@ -121,13 +127,20 @@ function Header() {
     ]
 
     const BUTTON_ITEM: IButtonItem[] = [
+        ...(timer === TIMER_TYPE_ENUM.STOP ? [] : [{
+            handler: handleStop,
+            icon: StopIcon,
+            label: "Stop session"
+        }]),
         {
             handler: handleTodoMenu,
-            icon: TimerIcon
+            icon: TimerIcon,
+            label: "Choose a timer"
         },
         {
             handler: handleHistory,
-            icon: HistoryIcon
+            icon: HistoryIcon,
+            label: "History"
         }
     ]
 
