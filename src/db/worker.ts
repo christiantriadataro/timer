@@ -2,13 +2,23 @@
 // needs no COOP/COEP headers, so the static Vercel deploy stays as it is.
 import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
 import {type Db, endSession, migrate, pauseSession, reconcile, resumeSession, startSession} from "./sessions.ts";
+import {dashboard} from "./stats.ts";
+
+// The SAH pool takes exclusive handles, so only one tab can hold the database (spec Q16).
+const OTHER_TAB_MESSAGE = "The timer is open in another tab: close that tab and reload this one to track sessions or see stats here.";
 
 const ready: Promise<Db> = (async () => {
     const sqlite3 = await sqlite3InitModule();
-    const pool = await sqlite3.installOpfsSAHPoolVfs({name: "timer"});
-    const db = new pool.OpfsSAHPoolDb("/timer.sqlite3") as unknown as Db;
-    migrate(db);
-    return db;
+    try {
+        const pool = await sqlite3.installOpfsSAHPoolVfs({name: "timer"});
+        const db = new pool.OpfsSAHPoolDb("/timer.sqlite3") as unknown as Db;
+        migrate(db);
+        return db;
+    } catch (error) {
+        const text = error instanceof Error ? `${error.name} ${error.message}` : String(error);
+        if (/Access Handle|NoModificationAllowed/i.test(text)) throw new Error(OTHER_TAB_MESSAGE);
+        throw error;
+    }
 })();
 
 const ops = {
@@ -17,6 +27,7 @@ const ops = {
     resume: resumeSession,
     end: endSession,
     reconcile,
+    dashboard,
 };
 
 export type DbOps = typeof ops;

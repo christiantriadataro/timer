@@ -1,6 +1,7 @@
 import useTime from "../time/useTime.ts";
 import useTimer from "../timer/useTimer.ts";
 import {useState, useSyncExternalStore} from "react";
+import {useNavigate} from "react-router";
 import {sessionTracker} from "../db/sessionTracker.ts";
 import {type SessionKind, TAG_MAX_LENGTH} from "../db/sessions.ts";
 import {TIMER_TYPE_ENUM} from "../timer/time.types.ts";
@@ -80,6 +81,7 @@ function Header() {
     const {time, setTime} = useTime();
     const {timer, setTimer, kind, setKind, tag, setTag} = useTimer()
     const [isOpenTodoMenu, setIsOpenTodoMenu] = useState(false)
+    const navigate = useNavigate()
     const storageError = useSyncExternalStore(sessionTracker.subscribe, sessionTracker.getError)
 
     const handleTodoMenu = () => {
@@ -100,9 +102,7 @@ function Header() {
         setTimer(TIMER_TYPE_ENUM.STOP)
     }
 
-    const handleHistory = () => {
-        // TODO: provides line chart for the user
-    }
+    const handleHistory = () => navigate("/dashboard")
 
     const handlePlay = () => {
         if (timer === TIMER_TYPE_ENUM.PAUSE) {
@@ -143,7 +143,7 @@ function Header() {
         {
             handler: handleHistory,
             icon: HistoryIcon,
-            label: "History"
+            label: "Stats dashboard"
         }
     ]
 

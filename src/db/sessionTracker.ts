@@ -1,7 +1,7 @@
 // Main-thread side of the session database: forwards timer events to the worker, one at a time
 // and in order, and exposes the last storage error so the UI can say stats aren't being saved.
 import type {DbOps, DbRequest} from "./worker.ts";
-import type {ActiveSession, SessionKind} from "./sessions.ts";
+import {type ActiveSession, localFields, type SessionKind} from "./sessions.ts";
 
 const worker = new Worker(new URL("./worker.ts", import.meta.url), {type: "module"});
 const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
@@ -75,6 +75,10 @@ export const sessionTracker = {
             activeId = s?.id ?? null;
             return s;
         });
+    },
+    // Queued behind pending writes, so the dashboard always includes the latest event.
+    dashboard() {
+        return enqueue(() => call("dashboard", localFields(Date.now()).local_date));
     },
     subscribe(listener: () => void) {
         listeners.add(listener);

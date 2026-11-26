@@ -1,6 +1,8 @@
 import useTime from "./time/useTime.ts";
 import {multiplierMinutes, multiplierSeconds} from "./time/time.helper.ts";
 import Header from "./header/Header.tsx";
+import Dashboard from "./dashboard/Dashboard.tsx";
+import {Route, Routes} from "react-router";
 
 
 function Num({value}: { value: number }) {
@@ -29,14 +31,20 @@ function Timer() {
 }
 
 
+// Providers sit above the routes (AppProvider), so a running countdown keeps going on /dashboard.
 function App() {
     return (
-        <div className="app-container">
-            <Header/>
-            <div className="content">
-                <Timer/>
-            </div>
-        </div>
+        <Routes>
+            <Route path="/" element={
+                <div className="app-container">
+                    <Header/>
+                    <div className="content">
+                        <Timer/>
+                    </div>
+                </div>
+            }/>
+            <Route path="/dashboard" element={<Dashboard/>}/>
+        </Routes>
     )
 }
 
